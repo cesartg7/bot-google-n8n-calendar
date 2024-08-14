@@ -288,6 +288,65 @@ class AIClass {
         }
     };
 
+    // /**
+    //  * Delete calendar event
+    //  * @param eventId 
+    //  * @param userId 
+    //  * @returns 
+    //  */
+    // deleteEvent = async (eventId: string, userId: string): Promise<string> => {
+    //     try {
+    //         const response = await fetch(process.env.N8N_DELETE_FROM_CALENDAR, {
+    //             method: 'DELETE',
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //             },
+    //             body: JSON.stringify({ eventId, userId }) // Enviar eventId y userId en el cuerpo de la solicitud
+    //         });
+
+    //         if (!response.ok) {
+    //             throw new Error('Failed to delete event');
+    //         }
+
+    //         return 'La cita ha sido eliminada exitosamente.';
+    //     } catch (err) {
+    //         console.error(err);
+    //         return 'Error al eliminar la cita.';
+    //     }
+    // }
+
+    // /**
+    //  * Update calendar event
+    //  * @param eventId 
+    //  * @param userId 
+    //  * @param updatedData 
+    //  * @returns 
+    //  */
+    // updateEvent = async (
+    //     eventId: string,
+    //     userId: string,
+    //     updatedData: { startDate: Date }
+    // ): Promise<string> => {
+    //     try {
+    //         const response = await fetch(process.env.N8N_UPDATE_TO_CALENDAR, {
+    //             method: 'PUT',
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //             },
+    //             body: JSON.stringify({ eventId, userId, ...updatedData }) // Enviar eventId, userId, y startDate en el cuerpo de la solicitud
+    //         });
+
+    //         if (!response.ok) {
+    //             throw new Error('Failed to update event');
+    //         }
+
+    //         return 'La cita ha sido actualizada exitosamente.';
+    //     } catch (err) {
+    //         console.error(err);
+    //         return 'Error al actualizar la cita.';
+    //     }
+    // }
+
 }
 
 export default AIClass;
