@@ -36,42 +36,57 @@ const appToCalendar = async (payload: { name: string, email: string, startDate: 
 
 /**
  * update calendar event
- * @param id 
+ * @param eventId 
  * @param payload 
  * @returns 
  */
-const updateCalendarEvent = async (id: string, payload: { name?: string, email?: string, startDate?: Date, endData?: Date }) => {
+const updateCalendarEvent = async (payload: { eventId: string, name?: string, email?: string, startDate?: Date, endData?: Date, phone?: string }) => {
     try {
-        const dataApi = await fetch(`${N8N_UPDATE_TO_CALENDAR}/${id}`, {
+
+        const dataApi = await fetch(N8N_UPDATE_TO_CALENDAR, {
             method: 'PUT', // Usualmente se usa PUT o PATCH para actualizaciones
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(payload)
-        })
-        return dataApi
+        });
+
+        if (!dataApi.ok) {
+            throw new Error('Failed to update event');
+        }
+
+        return dataApi;
     } catch (err) {
-        console.log(`Error: `, err)
+        console.log(`Error: `, err);
+        throw new Error('Error al actualizar la cita.');
     }
-}
+};
 
 /**
- * delete calendar event
- * @param id 
+ * Delete calendar event
+ * @param payload 
  * @returns 
  */
-const deleteCalendarEvent = async (id: string) => {
+const deleteCalendarEvent = async (payload: { eventId: string, phone?: string, [key: string]: any }) => {
     try {
-        const dataApi = await fetch(`${N8N_DELETE_FROM_CALENDAR}/${id}`, {
+        const response = await fetch(N8N_DELETE_FROM_CALENDAR, {
             method: 'DELETE',
             headers: {
                 "Content-Type": "application/json",
-            }
-        })
-        return dataApi
+            },
+            body: JSON.stringify(payload)  // Enviar todo el payload
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete event');
+        }
+
+        return response; // Puedes devolver la respuesta o un mensaje de éxito
     } catch (err) {
-        console.log(`Error: `, err)
+        console.log(`error: `, err);
+        throw new Error('Error al eliminar la cita.');
     }
-}
+};
+
 
 export { getCurrentCalendar, appToCalendar, updateCalendarEvent, deleteCalendarEvent }
