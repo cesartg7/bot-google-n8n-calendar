@@ -7,7 +7,7 @@ import { getFullCurrentDate } from "src/utils/currentDate";
 import { flowConfirm } from "./confirm.flow";
 import { addMinutes, isWithinInterval, format, parse } from "date-fns";
 
-const DURATION_MEET = process.env.DURATION_MEET ?? 45
+const DURATION_MEET = process.env.DURATION_MEET ?? 55
 
 const PROMPT_FILTER_DATE = `
 ### Contexto

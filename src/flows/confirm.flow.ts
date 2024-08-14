@@ -4,7 +4,7 @@ import { addMinutes, format } from "date-fns";
 import { utcToZonedTime } from "date-fns-tz";
 import { appToCalendar } from "src/services/calendar";
 
-const DURATION_MEET = process.env.DURATION_MEET ?? 45
+const DURATION_MEET = process.env.DURATION_MEET ?? 55
 const TIME_ZONE = process.env.TZ
 /**
  * Encargado de pedir los datos necesarios para registrar el evento en el calendario

@@ -1,4 +1,4 @@
-import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR } from 'src/config'
+import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N_DELETE_FROM_CALENDAR } from 'src/config'
 
 /**
  * get calendar
@@ -34,4 +34,44 @@ const appToCalendar = async (payload: { name: string, email: string, startDate: 
     }
 }
 
-export { getCurrentCalendar, appToCalendar }
+/**
+ * update calendar event
+ * @param id 
+ * @param payload 
+ * @returns 
+ */
+const updateCalendarEvent = async (id: string, payload: { name?: string, email?: string, startDate?: Date, endData?: Date }) => {
+    try {
+        const dataApi = await fetch(`${N8N_UPDATE_TO_CALENDAR}/${id}`, {
+            method: 'PUT', // Usualmente se usa PUT o PATCH para actualizaciones
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload)
+        })
+        return dataApi
+    } catch (err) {
+        console.log(`Error: `, err)
+    }
+}
+
+/**
+ * delete calendar event
+ * @param id 
+ * @returns 
+ */
+const deleteCalendarEvent = async (id: string) => {
+    try {
+        const dataApi = await fetch(`${N8N_DELETE_FROM_CALENDAR}/${id}`, {
+            method: 'DELETE',
+            headers: {
+                "Content-Type": "application/json",
+            }
+        })
+        return dataApi
+    } catch (err) {
+        console.log(`Error: `, err)
+    }
+}
+
+export { getCurrentCalendar, appToCalendar, updateCalendarEvent, deleteCalendarEvent }
