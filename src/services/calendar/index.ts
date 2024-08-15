@@ -68,30 +68,35 @@ const updateCalendarEvent = async (payload: { eventId: string, name?: string, em
 };
 
 /**
- * Delete calendar event
- * @param payload 
- * @returns 
- */
-const deleteCalendarEvent = async (payload: { eventId: string, phone?: string, [key: string]: any }) => {
-    try {
-        const response = await fetch(N8N_DELETE_FROM_CALENDAR, {
-            method: 'DELETE',
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload)  // Enviar todo el payload
-        });
+* Delete calendar event
+* @param eventId 
+* @param phone 
+* @returns 
+*/
+const deleteCalendarEvent = async ({ eventId, phone }: { eventId: string, phone: string }) => {
+   try {
+       console.log(`Eliminando evento con ID: ${eventId} y Phone: ${phone}`);
 
-        if (!response.ok) {
-            throw new Error('Failed to delete event');
-        }
+       const dataApi = await fetch(N8N_DELETE_FROM_CALENDAR, {
+           method: 'DELETE', // Método DELETE para eliminar
+           headers: {
+               "Content-Type": "application/json",
+           },
+           body: JSON.stringify({ eventId, phone }) // Asegúrate de enviar el eventId y phone
+       });
 
-        return response; // Puedes devolver la respuesta o un mensaje de éxito
-    } catch (err) {
-        console.log(`error: `, err);
-        throw new Error('Error al eliminar la cita.');
-    }
+       if (!dataApi.ok) {
+           throw new Error('Failed to delete event');
+       }
+
+       const response = await dataApi.json();
+       console.log('Respuesta del servidor:', response);
+
+       return response;
+   } catch (err) {
+       console.log(`Error al eliminar la cita: `, err);
+       throw new Error('Error al eliminar la cita.');
+   }
 };
-
 
 export { getCurrentCalendar, appToCalendar, updateCalendarEvent, deleteCalendarEvent }
