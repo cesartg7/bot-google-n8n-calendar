@@ -4,13 +4,18 @@ import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N
  * get calendar
  * @returns 
  */
-const getCurrentCalendar = async (): Promise<{ start: string, end: string }[]> => {
+const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string }[]> => {
     const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR)
-    const json: { start: { dateTime: string }, end: { dateTime: string } }[] = await dataCalendarApi.json()
+    const json: { id: string, start: { dateTime: string }, end: { dateTime: string } }[] = await dataCalendarApi.json()
     const list = json.reduce((prev, current) => {
-        prev.push({ start: current.start.dateTime, end: current.end.dateTime })
+        prev.push({ id: current.id, start: current.start.dateTime, end: current.end.dateTime })
         return prev
     }, [])
+
+    console.log('ESTAMOS EN EL METODO GETCURRENTCALENDAR A VER QUE DEVUELVE:');
+    console.log('json', json);
+    console.log('list', list);
+    
     return list
 }
 

@@ -12,48 +12,66 @@ const flowDeleteByDate = addKeyword(['eliminar', 'borrar', 'cancelar'])
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
 
+        console.log('ESTAMOS ACTUALMENTE EN FLOWDELETE');
+
         const dateInput = ctx.body.trim();
+        console.log('dateInput', dateInput);
+
         const desiredDate = parse(dateInput, 'yyyy-MM-dd', new Date());
+        console.log('desiredDate', desiredDate);
 
         if (isNaN(desiredDate.getTime())) {
             return fallBack('Por favor, proporciona una fecha válida en formato yyyy-MM-dd.');
         }
 
-        const appointments = await getCurrentCalendar();
-        const appointmentsOnDate = appointments.filter(appointment => isSameDay(new Date(appointment.start), desiredDate));
-
-        if (appointmentsOnDate.length === 0) {
-            return flowDynamic(`No se encontraron citas para el ${format(desiredDate, 'dd-MM-yyyy')}.`);
-        }
-
-        // Mostrar las citas al usuario
-        let message = `He encontrado las siguientes citas para el ${format(desiredDate, 'dd-MM-yyyy')}:\n`;
-        appointmentsOnDate.forEach((appointment, index) => {
-            message += `${index + 1}. De ${format(new Date(appointment.start), 'HH:mm')} a ${format(new Date(appointment.end), 'HH:mm')}\n`;
-        });
-
-        await state.update({ appointmentsOnDate, desiredDate });
-        await flowDynamic(message + '\nResponde con el número de la cita que deseas eliminar.');
+        await state.update({ desiredDate });
+        await flowDynamic('Por favor, proporciona la hora de la cita que deseas eliminar (formato: HH:mm).');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
-        const choice = parseInt(ctx.body.trim(), 10);
+        const timeInput = ctx.body.trim();
+        const desiredDate = state.get('desiredDate');
 
-        if (isNaN(choice) || choice < 1 || choice > state.get('appointmentsOnDate').length) {
-            return fallBack('Por favor, selecciona un número válido.');
+        console.log('timeInput', timeInput);
+
+        const desiredDateTime = parse(`${format(desiredDate, 'yyyy-MM-dd')} ${timeInput}`, 'yyyy-MM-dd HH:mm', new Date());
+
+        console.log('desiredDateTime', desiredDateTime);
+        
+        if (isNaN(desiredDateTime.getTime())) {
+            return fallBack('Por favor, proporciona una hora válida en formato HH:mm.');
         }
 
-        const selectedAppointment = state.get('appointmentsOnDate')[choice - 1];
+        const appointments = await getCurrentCalendar();
+        console.log('appointments', appointments);
+        
+        const appointment = appointments.find(appointment => isSameDay(new Date(appointment.start), desiredDateTime));
+        console.log('appointment', appointment);
 
-        // Construir el payload con los datos que necesitas
-        const payload = {
-            eventId: selectedAppointment.id,
-            phone: ctx.from 
-        };
+        if (!appointment) {
+            return flowDynamic(`No se encontró ninguna cita para el ${format(desiredDateTime, 'dd-MM-yyyy')} a las ${format(desiredDateTime, 'HH:mm')}.`);
+        }
 
-        await deleteCalendarEvent(payload);
+        console.log('state antes de updatear', state);
 
-        clearHistory(state);
-        await flowDynamic('La cita ha sido eliminada exitosamente.');
+        await state.update({ eventId: appointment.id, appointmentDetails: appointment });
+        console.log('state despues de updatear', state);
+        
+        await flowDynamic('¿Está seguro de que desea eliminar esta cita? Responde con "sí" o "no".');
+    })
+    .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
+        if (ctx.body.trim().toLowerCase() === 'sí') {
+            const eventId = state.get('eventId');
+            const phone = ctx.from; // Asegúrate de que `phone` se pasa correctamente
+
+            // Llamar a la función para eliminar la cita
+            await deleteCalendarEvent({ eventId, phone });
+
+            clearHistory(state);
+            await flowDynamic('La cita ha sido eliminada exitosamente.');
+        } else {
+            await flowDynamic('La cita no ha sido eliminada.');
+            clearHistory(state);
+        }
     });
 
 export { flowDeleteByDate };
