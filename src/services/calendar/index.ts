@@ -1,22 +1,33 @@
 import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N_DELETE_FROM_CALENDAR } from 'src/config'
 
 /**
+//  * get calendar
+//  * @returns 
+//  */
+// const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string }[]> => {
+//     const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR)
+//     const json: { id: string, start: { dateTime: string }, end: { dateTime: string } }[] = await dataCalendarApi.json()
+//     const list = json.reduce((prev, current) => {
+//         prev.push({ id: current.id, start: current.start.dateTime, end: current.end.dateTime, description: current.description || '' })
+//         return prev
+//     }, [])
+//     return list
+// }
+
+/**
  * get calendar
  * @returns 
  */
-const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string }[]> => {
-    const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR)
-    const json: { id: string, start: { dateTime: string }, end: { dateTime: string } }[] = await dataCalendarApi.json()
-    const list = json.reduce((prev, current) => {
-        prev.push({ id: current.id, start: current.start.dateTime, end: current.end.dateTime })
-        return prev
-    }, [])
-
-    console.log('ESTAMOS EN EL METODO GETCURRENTCALENDAR A VER QUE DEVUELVE:');
-    console.log('json', json);
-    console.log('list', list);
-    
-    return list
+const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string }[]> => {
+    const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR);
+    const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string }[] = await dataCalendarApi.json();
+    const list = json.map(event => ({
+        id: event.id,
+        start: event.start.dateTime,
+        end: event.end.dateTime,
+        description: event.description || ''  // Incluimos la descripción si está disponible
+    }));
+    return list;
 }
 
 /**
@@ -37,7 +48,34 @@ const appToCalendar = async (payload: { name: string, email: string, startDate: 
     } catch (err) {
         console.log(`error: `, err)
     }
-}
+};
+
+// /**
+//  * Get specific calendar event
+//  * @param eventId 
+//  * @returns 
+//  */
+// const getCurrentEvent = async (eventId: string) => {
+//     try {
+//         const response = await fetch(N8N_GET_EVENT, {
+//             method: 'POST', // Cambiamos a POST para enviar el body
+//             headers: {
+//                 "Content-Type": "application/json",
+//             },
+//             body: JSON.stringify({ eventId }) 
+//         });
+
+//         if (!response.ok) {
+//             throw new Error('Failed to fetch event');
+//         }
+
+//         const event = await response.json();
+
+//         return event;
+//     } catch (err) {
+//         throw new Error('Error fetching event.');
+//     }
+// };
 
 /**
  * update calendar event

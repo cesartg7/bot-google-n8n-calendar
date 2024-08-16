@@ -1,24 +1,18 @@
 import { addKeyword } from "@builderbot/bot";
 import { getCurrentCalendar, deleteCalendarEvent } from "../services/calendar";
-import { format, parse, isSameDay } from "date-fns";
+import { format, parse, isSameDay, isEqual } from "date-fns";
 import { clearHistory } from "../utils/handleHistory";
 
 /**
- * Encargado eliminar un evento del calendario
+ * Encargado de eliminar un evento del calendario
  */
 const flowDeleteByDate = addKeyword(['eliminar', 'borrar', 'cancelar'])
     .addAction(async (_, { flowDynamic }) => {
         await flowDynamic('Por favor, proporciona la fecha de la cita que deseas eliminar (formato: yyyy-MM-dd).');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
-
-        console.log('ESTAMOS ACTUALMENTE EN FLOWDELETE');
-
         const dateInput = ctx.body.trim();
-        console.log('dateInput', dateInput);
-
         const desiredDate = parse(dateInput, 'yyyy-MM-dd', new Date());
-        console.log('desiredDate', desiredDate);
 
         if (isNaN(desiredDate.getTime())) {
             return fallBack('Por favor, proporciona una fecha válida en formato yyyy-MM-dd.');
@@ -31,37 +25,34 @@ const flowDeleteByDate = addKeyword(['eliminar', 'borrar', 'cancelar'])
         const timeInput = ctx.body.trim();
         const desiredDate = state.get('desiredDate');
 
-        console.log('timeInput', timeInput);
-
         const desiredDateTime = parse(`${format(desiredDate, 'yyyy-MM-dd')} ${timeInput}`, 'yyyy-MM-dd HH:mm', new Date());
 
-        console.log('desiredDateTime', desiredDateTime);
-        
         if (isNaN(desiredDateTime.getTime())) {
             return fallBack('Por favor, proporciona una hora válida en formato HH:mm.');
         }
 
         const appointments = await getCurrentCalendar();
-        console.log('appointments', appointments);
-        
-        const appointment = appointments.find(appointment => isSameDay(new Date(appointment.start), desiredDateTime));
-        console.log('appointment', appointment);
+        const appointment = appointments.find(appointment => isEqual(new Date(appointment.start), desiredDateTime));
 
         if (!appointment) {
             return flowDynamic(`No se encontró ninguna cita para el ${format(desiredDateTime, 'dd-MM-yyyy')} a las ${format(desiredDateTime, 'HH:mm')}.`);
         }
 
-        console.log('state antes de updatear', state);
+        const eventId = appointment.id;
+        const description = appointment.description || '';
+        const phoneInDescription = description.match(/Phone: (\d+)/)?.[1];
 
-        await state.update({ eventId: appointment.id, appointmentDetails: appointment });
-        console.log('state despues de updatear', state);
-        
+        if (!phoneInDescription || phoneInDescription !== ctx.from) {
+            return flowDynamic('No tienes permiso para eliminar esta cita.');
+        }
+
+        await state.update({ eventId, appointmentDetails: appointment });
         await flowDynamic('¿Está seguro de que desea eliminar esta cita? Responde con "sí" o "no".');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
         if (ctx.body.trim().toLowerCase() === 'sí') {
             const eventId = state.get('eventId');
-            const phone = ctx.from; // Asegúrate de que `phone` se pasa correctamente
+            const phone = ctx.from;
 
             // Llamar a la función para eliminar la cita
             await deleteCalendarEvent({ eventId, phone });

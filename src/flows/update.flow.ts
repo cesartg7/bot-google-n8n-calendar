@@ -1,6 +1,6 @@
 import { addKeyword } from "@builderbot/bot";
 import { updateCalendarEvent, getCurrentCalendar } from "../services/calendar";
-import { format, parse, isSameDay } from "date-fns";
+import { format, parse, isSameDay, isEqual } from "date-fns";
 import { clearHistory } from "../utils/handleHistory";
 
 const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir'])
@@ -8,51 +8,42 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
         await flowDynamic('Vamos a actualizar una cita. Por favor, proporciona la fecha de la cita que deseas actualizar (formato: yyyy-MM-dd).');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
-
-        console.log('ESTAMOS ACTUALMENTE EN FLOWUPDATE');
-
         const dateInput = ctx.body.trim();
-        console.log('dateInput', dateInput);
-
         const desiredDate = parse(dateInput, 'yyyy-MM-dd', new Date());
-        console.log('desiredDate', desiredDate);
 
         if (isNaN(desiredDate.getTime())) {
             return fallBack('Por favor, proporciona una fecha válida en formato yyyy-MM-dd.');
         }
 
         await state.update({ desiredDate });
-        await flowDynamic('Por favor, proporciona la hora de la cita que deseas eliminar (formato: HH:mm).');
+        await flowDynamic('Por favor, proporciona la hora de la cita que deseas actualizar (formato: HH:mm).');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
         const timeInput = ctx.body.trim();
         const desiredDate = state.get('desiredDate');
 
-        console.log('timeInput', timeInput);
-
         const desiredDateTime = parse(`${format(desiredDate, 'yyyy-MM-dd')} ${timeInput}`, 'yyyy-MM-dd HH:mm', new Date());
-
-        console.log('desiredDateTime', desiredDateTime);
 
         if (isNaN(desiredDateTime.getTime())) {
             return fallBack('Por favor, proporciona una hora válida en formato HH:mm.');
         }
 
         const appointments = await getCurrentCalendar();
-        console.log('appointments', appointments);
-
-        const appointment = appointments.find(appointment => isSameDay(new Date(appointment.start), desiredDateTime));
-        console.log('appointment', appointment);
+        const appointment = appointments.find(appointment => isEqual(new Date(appointment.start), desiredDateTime));
 
         if (!appointment) {
             return flowDynamic(`No se encontró ninguna cita para el ${format(desiredDateTime, 'dd-MM-yyyy')} a las ${format(desiredDateTime, 'HH:mm')}.`);
         }
 
-        console.log('state antes de updatear', state);
+        const eventId = appointment.id;
+        const description = appointment.description || '';
+        const phoneInDescription = description.match(/Phone: (\d+)/)?.[1];
 
-        await state.update({ eventId: appointment.id, appointmentDetails: appointment });
-        console.log('state despues de updatear', state);
-       
+        if (!phoneInDescription || phoneInDescription !== ctx.from) {
+            return flowDynamic('No tienes permiso para modificar esta cita.');
+        }
+
+        await state.update({ eventId, appointmentDetails: appointment });
         await flowDynamic('¿Qué deseas actualizar? (nombre, email, fecha/hora)');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, endFlow }) => {
