@@ -49,13 +49,16 @@ const flowDeleteByDate = addKeyword(['eliminar', 'borrar', 'cancelar'])
         await state.update({ eventId, appointmentDetails: appointment });
         await flowDynamic('¿Está seguro de que desea eliminar esta cita? Responde con "sí" o "no".');
     })
-    .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
+    .addAction({ capture: true }, async (ctx, { state, flowDynamic }) => {
         if (ctx.body.trim().toLowerCase() === 'sí') {
             const eventId = state.get('eventId');
             const phone = ctx.from;
 
-            // Llamar a la función para eliminar la cita
-            await deleteCalendarEvent({ eventId, phone });
+            // Construir el payload con eventId y phone
+            const payload = { eventId, phone };
+
+            // Llamar a la función para eliminar la cita pasando el payload
+            await deleteCalendarEvent(payload);
 
             clearHistory(state);
             await flowDynamic('La cita ha sido eliminada exitosamente.');
