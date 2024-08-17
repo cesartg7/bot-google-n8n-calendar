@@ -4,7 +4,7 @@ import AIClass from "../services/ai";
 import { flowSeller } from "../flows/seller.flow";
 import { flowSchedule } from "../flows/schedule.flow";
 import { flowUpdate } from "../flows/update.flow";
-import { flowDeleteByDate } from "../flows/delete.flow";
+import { flowDelete } from "../flows/delete.flow";
 
 const PROMPT_DISCRIMINATOR = `### Historial de Conversación (Vendedor/Cliente) ###
 {HISTORY}
@@ -41,5 +41,5 @@ export default async (_: BotContext, { state, gotoFlow, extensions }: BotMethods
     if (prediction.includes('HABLAR')) return gotoFlow(flowSeller);
     if (prediction.includes('PROGRAMAR')) return gotoFlow(flowSchedule);
     if (prediction.includes('MODIFICAR')) return gotoFlow(flowUpdate);
-    if (prediction.includes('ELIMINAR')) return gotoFlow(flowDeleteByDate);
+    if (prediction.includes('ELIMINAR')) return gotoFlow(flowDelete);
 }

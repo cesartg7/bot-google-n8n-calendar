@@ -6,7 +6,7 @@ import { clearHistory } from "../utils/handleHistory";
 /**
  * Encargado de eliminar un evento del calendario
  */
-const flowDeleteByDate = addKeyword(['eliminar', 'borrar', 'cancelar'])
+const flowDelete = addKeyword(['eliminar', 'borrar', 'cancelar'])
     .addAction(async (_, { flowDynamic }) => {
         await flowDynamic('Por favor, proporciona la fecha de la cita que deseas eliminar (formato: yyyy-MM-dd).');
     })
@@ -50,15 +50,16 @@ const flowDeleteByDate = addKeyword(['eliminar', 'borrar', 'cancelar'])
         await flowDynamic('¿Está seguro de que desea eliminar esta cita? Responde con "sí" o "no".');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic }) => {
-        if (ctx.body.trim().toLowerCase() === 'sí') {
+        if (ctx.body.trim().toLowerCase() === 'sí' || ctx.body.trim().toLowerCase() === 'si') {
+            let data: any = {};
             const eventId = state.get('eventId');
             const phone = ctx.from;
 
-            // Construir el payload con eventId y phone
-            const payload = { eventId, phone };
+            data.eventId = eventId;
+            data.phone = phone;
 
             // Llamar a la función para eliminar la cita pasando el payload
-            await deleteCalendarEvent(payload);
+            await deleteCalendarEvent(data);
 
             clearHistory(state);
             await flowDynamic('La cita ha sido eliminada exitosamente.');
@@ -68,4 +69,4 @@ const flowDeleteByDate = addKeyword(['eliminar', 'borrar', 'cancelar'])
         }
     });
 
-export { flowDeleteByDate };
+export { flowDelete };
