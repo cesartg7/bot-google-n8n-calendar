@@ -6,7 +6,7 @@ import { flowSchedule } from "./schedule.flow";
 import { flowConfirm } from "./confirm.flow";
 import { voiceFlow } from "./voice.flow";
 import { registerFlow } from "./register.flow";
-import { flowDeleteByDate } from "./delete.flow";
+import { flowDelete} from "./delete.flow";
 import { flowUpdate } from "./update.flow";
 
 
@@ -17,6 +17,6 @@ export default createFlow([
     flowConfirm,
     voiceFlow,
     registerFlow,
-    flowDeleteByDate,
+    flowDelete,
     flowUpdate,
 ])

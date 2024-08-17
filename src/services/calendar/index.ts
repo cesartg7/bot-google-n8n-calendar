@@ -1,20 +1,6 @@
 import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N_DELETE_FROM_CALENDAR } from 'src/config'
 
 /**
-//  * get calendar
-//  * @returns 
-//  */
-// const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string }[]> => {
-//     const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR)
-//     const json: { id: string, start: { dateTime: string }, end: { dateTime: string } }[] = await dataCalendarApi.json()
-//     const list = json.reduce((prev, current) => {
-//         prev.push({ id: current.id, start: current.start.dateTime, end: current.end.dateTime, description: current.description || '' })
-//         return prev
-//     }, [])
-//     return list
-// }
-
-/**
  * get calendar
  * @returns 
  */
