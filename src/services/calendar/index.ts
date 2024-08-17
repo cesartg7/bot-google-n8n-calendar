@@ -96,23 +96,23 @@ const updateCalendarEvent = async (payload: { eventId: string, name?: string, em
 * @returns 
 */
 const deleteCalendarEvent = async (payload: { eventId: string, phone: string }) => {
-   try {
-       const dataApi = await fetch(N8N_DELETE_FROM_CALENDAR, {
-           method: 'DELETE', 
-           headers: {
-               "Content-Type": "application/json",
-           },
-           body: JSON.stringify({ payload }) // Asegúrate de enviar el eventId y phone
-       });
+    try {
+        const dataApi = await fetch(N8N_DELETE_FROM_CALENDAR, {
+            method: 'DELETE',
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload) // Enviar el eventId y phone directamente
+        });
 
-       if (!dataApi.ok) {
-           throw new Error('Failed to delete event');
-       }
+        if (!dataApi.ok) {
+            throw new Error('Failed to delete event');
+        }
 
-       return dataApi;
-   } catch (err) {
-       throw new Error('Error al eliminar la cita.');
-   }
+        return dataApi;
+    } catch (err) {
+        throw new Error('Error al eliminar la cita.');
+    }
 };
 
 export { getCurrentCalendar, appToCalendar, updateCalendarEvent, deleteCalendarEvent }
