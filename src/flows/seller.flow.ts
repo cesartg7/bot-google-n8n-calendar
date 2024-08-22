@@ -42,7 +42,6 @@ export const generatePromptSeller = (history: string, database: string) => {
 };
 
 const flowSeller = addKeyword(EVENTS.ACTION)
-    .addAnswer(`⏱️`)
     .addAction(async (_, { state, flowDynamic, extensions }) => {
         try {
 

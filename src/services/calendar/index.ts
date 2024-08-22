@@ -4,14 +4,16 @@ import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N
  * get calendar
  * @returns 
  */
-const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string }[]> => {
+const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string, name: string, email: string }[]> => {
     const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR);
-    const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string }[] = await dataCalendarApi.json();
+    const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string,  name: string, email: string }[] = await dataCalendarApi.json();
     const list = json.map(event => ({
         id: event.id,
         start: event.start.dateTime,
         end: event.end.dateTime,
-        description: event.description || ''  // Incluimos la descripción si está disponible
+        description: event.description || '',
+        name: event.name || '',
+        email: event.email || '',
     }));
     return list;
 }
@@ -36,33 +38,6 @@ const appToCalendar = async (payload: { name: string, email: string, startDate: 
     }
 };
 
-// /**
-//  * Get specific calendar event
-//  * @param eventId 
-//  * @returns 
-//  */
-// const getCurrentEvent = async (eventId: string) => {
-//     try {
-//         const response = await fetch(N8N_GET_EVENT, {
-//             method: 'POST', // Cambiamos a POST para enviar el body
-//             headers: {
-//                 "Content-Type": "application/json",
-//             },
-//             body: JSON.stringify({ eventId }) 
-//         });
-
-//         if (!response.ok) {
-//             throw new Error('Failed to fetch event');
-//         }
-
-//         const event = await response.json();
-
-//         return event;
-//     } catch (err) {
-//         throw new Error('Error fetching event.');
-//     }
-// };
-
 /**
  * update calendar event
  * @param eventId 
@@ -72,7 +47,7 @@ const appToCalendar = async (payload: { name: string, email: string, startDate: 
 const updateCalendarEvent = async (payload: { eventId: string, name?: string, email?: string, startDate?: Date, endData?: Date, phone?: string }) => {
     try {
         const dataApi = await fetch(N8N_UPDATE_TO_CALENDAR, {
-            method: 'PUT', // Usualmente se usa PUT o PATCH para actualizaciones
+            method: 'PUT',
             headers: {
                 "Content-Type": "application/json",
             },
@@ -80,7 +55,7 @@ const updateCalendarEvent = async (payload: { eventId: string, name?: string, em
         });
 
         if (!dataApi.ok) {
-            throw new Error('Failed to update event');
+            throw new Error('Error al actualizar la cita.');
         }
 
         return dataApi;
@@ -102,11 +77,11 @@ const deleteCalendarEvent = async (payload: { eventId: string, phone: string }) 
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(payload) // Enviar el eventId y phone directamente
+            body: JSON.stringify(payload)
         });
 
         if (!dataApi.ok) {
-            throw new Error('Failed to delete event');
+            throw new Error('Error al eliminar la cita.');
         }
 
         return dataApi;

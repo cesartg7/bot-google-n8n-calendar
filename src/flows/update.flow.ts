@@ -1,18 +1,24 @@
 import { addKeyword } from "@builderbot/bot";
 import { updateCalendarEvent, getCurrentCalendar } from "../services/calendar";
-import { format, parse, isSameDay, isEqual } from "date-fns";
+import { format, parse, isEqual, isValid, isBefore } from "date-fns";
 import { clearHistory } from "../utils/handleHistory";
 
 const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir'])
     .addAction(async (_, { flowDynamic }) => {
-        await flowDynamic('Vamos a actualizar una cita. Por favor, proporciona la fecha de la cita que deseas actualizar (formato: yyyy-MM-dd).');
+        await flowDynamic('Vamos a actualizar una cita. Por favor, proporciona la fecha de la cita que deseas actualizar (formato: dd-MM-yyyy).');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
         const dateInput = ctx.body.trim();
-        const desiredDate = parse(dateInput, 'yyyy-MM-dd', new Date());
+        const desiredDate = parse(dateInput, 'dd-MM-yyyy', new Date());
 
-        if (isNaN(desiredDate.getTime())) {
-            return fallBack('Por favor, proporciona una fecha válida en formato yyyy-MM-dd.');
+        const formattedInputDate = format(desiredDate, 'dd-MM-yyyy');
+        if (isNaN(desiredDate.getTime()) || formattedInputDate !== dateInput || !isValid(desiredDate)) {
+            return fallBack('Por favor, proporciona una fecha válida en formato dd-MM-yyyy (día mes año).');
+        }
+
+        const now = new Date();
+        if (isBefore(desiredDate, now)) {
+            return fallBack('No puedes actualizar una cita a una fecha anterior a hoy. Por favor, proporciona una nueva fecha.');
         }
 
         await state.update({ desiredDate });
@@ -24,8 +30,14 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
 
         const desiredDateTime = parse(`${format(desiredDate, 'yyyy-MM-dd')} ${timeInput}`, 'yyyy-MM-dd HH:mm', new Date());
 
-        if (isNaN(desiredDateTime.getTime())) {
-            return fallBack('Por favor, proporciona una hora válida en formato HH:mm.');
+        const formattedInputTime = format(desiredDateTime, 'HH:mm');
+        if (isNaN(desiredDateTime.getTime()) || formattedInputTime !== timeInput || !isValid(desiredDateTime)) {
+            return fallBack('Por favor, proporciona una hora válida en formato HH:mm (Horas minutos).');
+        }
+
+        const now = new Date();
+        if (isBefore(desiredDateTime, now)) {
+            return fallBack('No puedes actualizar una cita a una hora anterior a la actual. Por favor, proporciona una nueva hora.');
         }
 
         const appointments = await getCurrentCalendar();
@@ -36,6 +48,8 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
         }
 
         const eventId = appointment.id;
+        const name = appointment.name;
+        const email = appointment.email;
         const description = appointment.description || '';
         const phoneInDescription = description.match(/Phone: (\d+)/)?.[1];
 
@@ -59,9 +73,9 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
                 await flowDynamic('Por favor, proporciona el nuevo email.');
                 await state.update({ updateField: 'email' });
                 break;
-            case 'fecha/hora':
-                await flowDynamic('Por favor, proporciona la nueva fecha y hora (formato: yyyy/MM/dd HH:mm:ss).');
-                await state.update({ updateField: 'startDate' });
+            case 'fecha/hora' || 'fecha' || 'fecha / hora':
+                await flowDynamic('Por favor, proporciona la nueva fecha (formato: dd-MM-yyyy).');
+                await state.update({ updateField: 'startDate', updatingDate: true });
                 break;
             default:
                 await flowDynamic('Lo siento, no entendí eso. ¿Puedes repetir?');
@@ -69,25 +83,64 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
         }
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic }) => {
-        const eventId = state.get('eventId');
+        let updateData: any = state.get('appointmentDetails');
         const updateField = state.get('updateField');
-        let updateData: any = {};
+        const updatingDate = state.get('updatingDate');
 
-        updateData[updateField] = ctx.body.trim();
+        if (updatingDate) {
+            const dateInput = ctx.body.trim();
+            const desiredDate = parse(dateInput, 'dd-MM-yyyy', new Date());
 
-        if (updateField === 'startDate') {
-            const startDate = new Date(ctx.body);
+            const formattedInputDate = format(desiredDate, 'dd-MM-yyyy');
+            if (isNaN(desiredDate.getTime()) || formattedInputDate !== dateInput || !isValid(desiredDate)) {
+                return flowDynamic('Por favor, proporciona una fecha válida en formato dd-MM-yyyy.');
+            }
+
+            const now = new Date();
+            if (isBefore(desiredDate, now)) {
+                return flowDynamic('No puedes actualizar la cita a una fecha anterior a hoy. Por favor, proporciona una nueva fecha.');
+            }
+
+            await state.update({ desiredDate });
+            await flowDynamic('Por favor, proporciona la nueva hora de la cita (formato: HH:mm).');
+        } else if (updateField === 'startDate') {
+            const desiredDate = state.get('desiredDate');
+            const timeInput = ctx.body.trim();
+            const startDate = parse(`${format(desiredDate, 'yyyy-MM-dd')} ${timeInput}`, 'yyyy-MM-dd HH:mm', new Date());
+
+            const formattedInputTime = format(startDate, 'HH:mm');
+            if (isNaN(startDate.getTime()) || formattedInputTime !== timeInput || !isValid(startDate)) {
+                return flowDynamic('Por favor, proporciona una hora válida en formato HH:mm.');
+            }
+
+            const now = new Date();
+            if (isBefore(startDate, now)) {
+                return flowDynamic('No puedes actualizar la cita a una hora anterior a la actual. Por favor, proporciona una nueva hora.');
+            }
+
             const endData = new Date(startDate.getTime() + 55 * 60000);  // +55 minutos
             updateData.startDate = startDate;
             updateData.endData = endData;
+
+            updateData.phone = ctx.from;  // Añadir el teléfono al payload
+            updateData.eventId = state.get('eventId'); // Añadir el eventId al payload
+
+            await updateCalendarEvent(updateData);
+            clearHistory(state);
+
+            const formattedDate = format(updateData.startDate, 'dd-MM-yyyy');
+            await flowDynamic(`Cita actualizada con éxito:\nFecha: ${formattedDate}\nNombre: ${updateData.name}\nEmail: ${updateData.email}\n\nMuchas gracias, que tengas un buen día`);
+        } else {
+            updateData[updateField] = ctx.body.trim();
+            updateData.phone = ctx.from;
+            updateData.eventId = state.get('eventId');
+
+            await updateCalendarEvent(updateData);
+            clearHistory(state);
+
+            const formattedDate = format(updateData.startDate, 'dd-MM-yyyy');
+            await flowDynamic(`Cita actualizada con éxito:\nFecha: ${formattedDate}\nNombre: ${updateData.name}\nEmail: ${updateData.email}\n\nMuchas gracias, que tengas un buen día`);
         }
-
-        updateData.phone = ctx.from;  // Añadir el teléfono al payload
-        updateData.eventId = eventId; // Añadir el eventId al payload
-
-        await updateCalendarEvent(updateData);
-        clearHistory(state);
-        await flowDynamic('La cita ha sido actualizada exitosamente.');
     });
 
 export { flowUpdate };

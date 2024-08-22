@@ -1,6 +1,6 @@
 import { addKeyword } from "@builderbot/bot";
 import { getCurrentCalendar, deleteCalendarEvent } from "../services/calendar";
-import { format, parse, isSameDay, isEqual } from "date-fns";
+import { format, parse, isEqual, isValid } from "date-fns";
 import { clearHistory } from "../utils/handleHistory";
 
 /**
@@ -8,14 +8,15 @@ import { clearHistory } from "../utils/handleHistory";
  */
 const flowDelete = addKeyword(['eliminar', 'borrar', 'cancelar'])
     .addAction(async (_, { flowDynamic }) => {
-        await flowDynamic('Por favor, proporciona la fecha de la cita que deseas eliminar (formato: yyyy-MM-dd).');
+        await flowDynamic('Por favor, proporciona la fecha de la cita que deseas eliminar (formato: dd-MM-yyyy).');
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
         const dateInput = ctx.body.trim();
-        const desiredDate = parse(dateInput, 'yyyy-MM-dd', new Date());
+        const desiredDate = parse(dateInput, 'dd-MM-yyyy', new Date());
 
-        if (isNaN(desiredDate.getTime())) {
-            return fallBack('Por favor, proporciona una fecha válida en formato yyyy-MM-dd.');
+        const formattedInputDate = format(desiredDate, 'dd-MM-yyyy');
+        if (isNaN(desiredDate.getTime()) || formattedInputDate !== dateInput || !isValid(desiredDate)) {
+            return fallBack('Por favor, proporciona una fecha válida en formato dd-MM-yyyy (día mes año).');
         }
 
         await state.update({ desiredDate });
@@ -27,8 +28,9 @@ const flowDelete = addKeyword(['eliminar', 'borrar', 'cancelar'])
 
         const desiredDateTime = parse(`${format(desiredDate, 'yyyy-MM-dd')} ${timeInput}`, 'yyyy-MM-dd HH:mm', new Date());
 
-        if (isNaN(desiredDateTime.getTime())) {
-            return fallBack('Por favor, proporciona una hora válida en formato HH:mm.');
+        const formattedInputTime = format(desiredDateTime, 'HH:mm');
+        if (isNaN(desiredDateTime.getTime()) || formattedInputTime !== timeInput || !isValid(desiredDateTime)) {
+            return fallBack('Por favor, proporciona una hora válida en formato HH:mm (Horas minutos).');
         }
 
         const appointments = await getCurrentCalendar();
@@ -62,7 +64,7 @@ const flowDelete = addKeyword(['eliminar', 'borrar', 'cancelar'])
             await deleteCalendarEvent(data);
 
             clearHistory(state);
-            await flowDynamic('La cita ha sido eliminada exitosamente.');
+            await flowDynamic('La cita ha sido eliminada exitosamente.\n\nMuchas gracias, que tengas un buen día');
         } else {
             await flowDynamic('La cita no ha sido eliminada.');
             clearHistory(state);
