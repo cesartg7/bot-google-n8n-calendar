@@ -5,26 +5,17 @@ import { format, parseISO, isValid } from "date-fns";
  * get calendar
  * @returns 
  */
-const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string, name: string, email: string, startISO: string, endISO: string }[]> => {
+const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string, name: string, email: string}[]> => {
     const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR);
     const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string, name: string, email: string }[] = await dataCalendarApi.json();
-    
-    const list = json.map(event => {
-        const startDate = parseISO(event.start.dateTime);
-        const endDate = parseISO(event.end.dateTime);
-
-        return {
-            id: event.id,
-            start: isValid(startDate) ? format(startDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date',
-            end: isValid(endDate) ? format(endDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date',
-            description: event.description || '',
-            name: event.name || '',
-            email: event.email || '',
-            startISO: event.start.dateTime,  // Almacenar la fecha original en formato ISO
-            endISO: event.end.dateTime  // Almacenar la fecha original en formato ISO
-        };
-    });
-    
+        const list = json.map(event => ({
+        id: event.id,
+        start: event.start.dateTime,
+        end: event.end.dateTime,
+        name: event.name || '',
+        email: event.email || '',
+        description: event.description || ''
+    }));
     return list;
 }
 

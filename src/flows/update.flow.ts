@@ -1,6 +1,6 @@
 import { addKeyword } from "@builderbot/bot";
 import { updateCalendarEvent, getCurrentCalendar } from "../services/calendar";
-import { format, parse, isEqual, isValid, isBefore } from "date-fns";
+import { format, parse, isSameDay, isEqual, isValid, isBefore } from "date-fns";
 import { clearHistory } from "../utils/handleHistory";
 
 const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir'])
@@ -10,11 +10,10 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
         try {
             const dateInput = ctx.body.trim();
-            const desiredDate = parse(dateInput, 'dd-MM-yyyy', new Date());
+            const desiredDate = parse(dateInput, 'yyyy-MM-dd', new Date());
 
-            const formattedInputDate = format(desiredDate, 'dd-MM-yyyy');
-            if (isNaN(desiredDate.getTime()) || formattedInputDate !== dateInput || !isValid(desiredDate)) {
-                return fallBack('Por favor, proporciona una fecha válida en formato dd-MM-yyyy (día mes año).');
+            if (isNaN(desiredDate.getTime()) || !isValid(desiredDate)) {
+                return fallBack('Por favor, proporciona una fecha válida en formato yyyy-MM-dd.');
             }
 
             const now = new Date();
@@ -27,7 +26,7 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
 
         } catch (error) {
             console.error('Error al procesar la fecha:', error);
-            return fallBack('La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido dd-MM-yyyy.');
+            return fallBack('La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido yyyy-MM-dd.');
         }
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
@@ -37,8 +36,7 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
 
             const desiredDateTime = parse(`${format(desiredDate, 'yyyy-MM-dd')} ${timeInput}`, 'yyyy-MM-dd HH:mm', new Date());
 
-            const formattedInputTime = format(desiredDateTime, 'HH:mm');
-            if (isNaN(desiredDateTime.getTime()) || formattedInputTime !== timeInput || !isValid(desiredDateTime)) {
+            if (isNaN(desiredDateTime.getTime()) || !isValid(desiredDateTime)) {
                 return fallBack('Por favor, proporciona una hora válida en formato HH:mm (Horas minutos).');
             }
 
@@ -48,15 +46,18 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
             }
 
             const appointments = await getCurrentCalendar();
-            const appointment = appointments.find(appointment => isEqual(new Date(appointment.startISO), desiredDateTime));
+            const appointment = appointments.find(appointment => isEqual(new Date(appointment.start), desiredDateTime));
 
             if (!appointment) {
                 return flowDynamic(`No se encontró ninguna cita para el ${format(desiredDateTime, 'dd-MM-yyyy')} a las ${format(desiredDateTime, 'HH:mm')}.`);
             }
 
+            // Evitar que el usuario ponga la misma fecha y hora
+            if (isEqual(new Date(appointment.start), desiredDateTime)) {
+                return fallBack('La nueva fecha y hora son iguales a las actuales. Proporciona una fecha y hora diferentes.');
+            }
+
             const eventId = appointment.id;
-            const name = appointment.name;
-            const email = appointment.email;
             const description = appointment.description || '';
             const phoneInDescription = description.match(/Phone: (\d+)/)?.[1];
 
@@ -65,11 +66,13 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
             }
 
             await state.update({ eventId, appointmentDetails: appointment });
-            await flowDynamic('¿Qué deseas actualizar? (nombre, email, fecha/hora)');
+            await flowDynamic('¿Qué deseas actualizar? (nombre, email, fecha)');
+
         } catch (error) {
             console.error('Error al procesar la hora:', error);
             return fallBack('La hora proporcionada no es válida. Por favor, intenta nuevamente con un formato válido HH:mm.');
         }
+
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, endFlow, fallBack }) => {
         try {
@@ -82,11 +85,15 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
                     await state.update({ updateField: 'name' });
                     break;
                 case 'email':
+                case 'correo':
+                case 'mail':
                     await flowDynamic('Por favor, proporciona el nuevo email.');
                     await state.update({ updateField: 'email' });
                     break;
-                case 'fecha/hora' || 'fecha' || 'fecha / hora':
-                    await flowDynamic('Por favor, proporciona la nueva fecha (formato: dd-MM-yyyy).');
+                case 'fecha/hora':
+                case 'fecha':
+                case 'fecha / hora':
+                    await flowDynamic('Por favor, proporciona la nueva fecha y hora (formato: yyyy-MM-dd HH:mm).');
                     await state.update({ updateField: 'startDate', updatingDate: true });
                     break;
                 default:
@@ -97,7 +104,6 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
             console.error('Error en la captura de campo de actualización:', error);
             return fallBack('Se ha producido un error al procesar tu solicitud. Por favor, intenta nuevamente.');
         }
-
     })
     .addAction({ capture: true }, async (ctx, { state, flowDynamic, fallBack }) => {
         try {
@@ -107,11 +113,10 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
 
             if (updatingDate) {
                 const dateInput = ctx.body.trim();
-                const desiredDate = parse(dateInput, 'dd-MM-yyyy', new Date());
+                const desiredDate = parse(dateInput, 'yyyy-MM-dd', new Date());
 
-                const formattedInputDate = format(desiredDate, 'dd-MM-yyyy');
-                if (isNaN(desiredDate.getTime()) || formattedInputDate !== dateInput || !isValid(desiredDate)) {
-                    return flowDynamic('Por favor, proporciona una fecha válida en formato dd-MM-yyyy.');
+                if (isNaN(desiredDate.getTime()) || !isValid(desiredDate)) {
+                    return flowDynamic('Por favor, proporciona una fecha válida en formato yyyy-MM-dd.');
                 }
 
                 const now = new Date();
@@ -126,8 +131,7 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
                 const timeInput = ctx.body.trim();
                 const startDate = parse(`${format(desiredDate, 'yyyy-MM-dd')} ${timeInput}`, 'yyyy-MM-dd HH:mm', new Date());
 
-                const formattedInputTime = format(startDate, 'HH:mm');
-                if (isNaN(startDate.getTime()) || formattedInputTime !== timeInput || !isValid(startDate)) {
+                if (isNaN(startDate.getTime()) || !isValid(startDate)) {
                     return flowDynamic('Por favor, proporciona una hora válida en formato HH:mm.');
                 }
 
@@ -159,6 +163,7 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
                 const formattedDate = format(updateData.startDate, 'dd-MM-yyyy');
                 await flowDynamic(`Cita actualizada con éxito:\nFecha: ${formattedDate}\nNombre: ${updateData.name}\nEmail: ${updateData.email}\n\nMuchas gracias, que tengas un buen día`);
             }
+
         } catch (error) {
             console.error('Error en la actualización de la cita:', error);
             return fallBack('Se ha producido un error al actualizar la cita. Por favor, intenta nuevamente.');

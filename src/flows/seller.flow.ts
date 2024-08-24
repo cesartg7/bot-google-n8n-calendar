@@ -67,7 +67,7 @@ const flowSeller = addKeyword(EVENTS.ACTION)
                 await flowDynamic([{ body: chunk.trim(), delay: generateTimer(150, 250) }]);
             }
         } catch (err) {
-            console.log(`[ERROR]:`, err);
+            console.log(`[ERROR]:`, err)
             await flowDynamic('Hubo un problema al procesar la solicitud. Por favor, intenta nuevamente.');
         }
     });

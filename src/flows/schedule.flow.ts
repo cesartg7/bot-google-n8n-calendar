@@ -5,13 +5,13 @@ import { generateTimer } from "../utils/generateTimer";
 import { getCurrentCalendar } from "../services/calendar";
 import { getFullCurrentDate } from "src/utils/currentDate";
 import { flowConfirm } from "./confirm.flow";
-import { addMinutes, isWithinInterval, format, parse, isBefore, isValid } from "date-fns";
+import { addMinutes, isWithinInterval, format, parse, isValid, isBefore } from "date-fns";
 
 const DURATION_MEET = process.env.DURATION_MEET ?? 55;
 
 const PROMPT_FILTER_DATE = `
 ### Contexto
-Eres un asistente de inteligencia artificial. Tu propósito es determinar la fecha y hora que el cliente quiere, en el formato dd-MM-yyyy HH:mm:ss.
+Eres un asistente de inteligencia artificial. Tu propósito es determinar la fecha y hora que el cliente quiere, en el formato yyyy-MM-dd HH:mm:ss.
 
 ### Fecha y Hora Actual:
 {CURRENT_DAY}
@@ -19,7 +19,7 @@ Eres un asistente de inteligencia artificial. Tu propósito es determinar la fec
 ### Registro de Conversación:
 {HISTORY}
 
-Asistente: "{respuesta en formato (dd-MM-yyyy HH:mm:ss)}"
+Asistente: "{respuesta en formato (yyyy-MM-dd HH:mm:ss)}"
 `;
 
 const generatePromptFilter = (history: string) => {
@@ -43,9 +43,9 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     const history = getHistoryParse(state);
     const list = await getCurrentCalendar();
 
-    const listParse = list.map(({ startISO, endISO }) => {
-        const fromDate = new Date(startISO);
-        const toDate = new Date(endISO);
+    const listParse = list.map(({ start, end }) => {
+        const fromDate = new Date(start);
+        const toDate = new Date(end);
 
         return {
             fromDate: isValid(fromDate) ? fromDate : 'Invalid Date',
@@ -64,20 +64,14 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
         }
     ]);
 
-    console.log('date', date);
-
-    const desiredDate = parse(date, 'dd-MM-yyyy HH:mm', new Date());
-
-    console.log('desiredDate', desiredDate);
+    const desiredDate = parse(date, 'yyyy-MM-dd HH:mm', new Date());
 
     if (!isValid(desiredDate)) {
-        const m = 'La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido dd-MM-yyyy HH:mm.';
+        const m = 'La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido yyyy-MM-dd HH:mm.';
         await flowDynamic(m);
         await handleHistory({ content: m, role: 'assistant' }, state);
         return endFlow();
     }
-
-    console.log('desiredDate', desiredDate);
     
     const now = new Date();
     console.log('now', now);
@@ -88,10 +82,7 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
         return endFlow();
     }
 
-    const isDateAvailable = listParse.every(({ fromDate, toDate }) => 
-        fromDate !== 'Invalid Date' && toDate !== 'Invalid Date' && 
-        !isWithinInterval(desiredDate, { start: fromDate, end: toDate })
-    );
+    const isDateAvailable = listParse.every(({ fromDate, toDate }) => !isWithinInterval(desiredDate, { start: fromDate, end: toDate }));
 
     if (!isDateAvailable) {
         const m = 'Lo siento, esa hora ya está reservada. ¿Alguna otra fecha y hora?';
@@ -104,10 +95,6 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     const formattedDateTo = format(addMinutes(desiredDate, +DURATION_MEET), 'hh:mm a');
     const message = `¡Perfecto! Tenemos disponibilidad de ${formattedDateFrom} a ${formattedDateTo} el día ${format(desiredDate, 'dd-MM-yyyy')}. ¿Confirmo tu reserva? *si*`;
     await handleHistory({ content: message, role: 'assistant' }, state);
-
-    // Convertimos desiredDate a ISO para guardar en el estado
-    const desiredDateISO = desiredDate.toISOString();
-    await state.update({ desiredDate: desiredDateISO }); // Guardar la fecha en formato ISO
 
     const chunks = message.split(/(?<!\d)\.\s+/g);
     for (const chunk of chunks) {

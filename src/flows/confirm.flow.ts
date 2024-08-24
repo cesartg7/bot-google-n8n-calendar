@@ -17,7 +17,6 @@ const flowConfirm = addKeyword(EVENTS.ACTION).addAction(async (_, { flowDynamic 
     if (ctx.body.toLocaleLowerCase().includes('cancelar')) {
         clearHistory(state)
         return endFlow(`¿Como puedo ayudarte?`)
-
     }
     await state.update({ name: ctx.body })
     await flowDynamic(`Ultima pregunta ¿Cual es tu email?`)
