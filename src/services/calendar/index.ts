@@ -1,4 +1,5 @@
 import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N_DELETE_FROM_CALENDAR } from 'src/config'
+import { format, parseISO } from "date-fns";
 
 /**
  * get calendar
@@ -7,14 +8,21 @@ import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N
 const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string, name: string, email: string }[]> => {
     const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR);
     const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string,  name: string, email: string }[] = await dataCalendarApi.json();
-    const list = json.map(event => ({
-        id: event.id,
-        start: event.start.dateTime,
-        end: event.end.dateTime,
-        description: event.description || '',
-        name: event.name || '',
-        email: event.email || '',
-    }));
+    
+    const list = json.map(event => {
+        const startDate = parseISO(event.start.dateTime);
+        const endDate = parseISO(event.end.dateTime);
+
+        return {
+            id: event.id,
+            start: format(startDate, 'dd-MM-yyyy HH:mm'),
+            end: format(endDate, 'dd-MM-yyyy HH:mm'),
+            description: event.description || '',
+            name: event.name || '',
+            email: event.email || '',
+        };
+    });
+    
     return list;
 }
 
