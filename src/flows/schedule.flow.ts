@@ -67,17 +67,17 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
 
     console.log('date', date);
 
-    const desiredDate = parse(date, 'dd-MM-yyyy HH:mm:ss', new Date());
-
-    console.log('desiredDate', desiredDate);
+    const desiredDate = parse(date, 'yyyy/MM/dd HH:mm:ss', new Date());
 
     if (!isValid(desiredDate)) {
-        const m = 'La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido dd-MM-yyyy HH:mm:ss.';
+        const m = 'La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido yyyy/MM/dd HH:mm:ss.';
         await flowDynamic(m);
         await handleHistory({ content: m, role: 'assistant' }, state);
         return endFlow();
     }
 
+    console.log('desiredDate', desiredDate);
+    
     const now = new Date();
     if (isBefore(desiredDate, now)) {
         const m = 'No puedes crear una cita en una fecha y hora anterior a la actual. Por favor, elige otra fecha y hora.';
