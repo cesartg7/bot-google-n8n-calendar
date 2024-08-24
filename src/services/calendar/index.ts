@@ -1,5 +1,5 @@
 import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N_DELETE_FROM_CALENDAR } from 'src/config'
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 
 /**
  * get calendar
@@ -13,10 +13,14 @@ const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: s
         const startDate = parseISO(event.start.dateTime);
         const endDate = parseISO(event.end.dateTime);
 
+        // Verificar si las fechas son válidas antes de formatearlas
+        const formattedStartDate = isValid(startDate) ? format(startDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date';
+        const formattedEndDate = isValid(endDate) ? format(endDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date';
+
         return {
             id: event.id,
-            start: format(startDate, 'dd-MM-yyyy HH:mm'),
-            end: format(endDate, 'dd-MM-yyyy HH:mm'),
+            start: formattedStartDate,
+            end: formattedEndDate,
             description: event.description || '',
             name: event.name || '',
             email: event.email || '',
@@ -25,6 +29,7 @@ const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: s
     
     return list;
 }
+
 
 /**
  * add to calendar

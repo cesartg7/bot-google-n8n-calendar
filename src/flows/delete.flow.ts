@@ -3,9 +3,6 @@ import { getCurrentCalendar, deleteCalendarEvent } from "../services/calendar";
 import { format, parse, isEqual, isValid } from "date-fns";
 import { clearHistory } from "../utils/handleHistory";
 
-/**
- * Encargado de eliminar un evento del calendario
- */
 const flowDelete = addKeyword(['eliminar', 'borrar', 'cancelar'])
     .addAction(async (_, { flowDynamic }) => {
         await flowDynamic('Por favor, proporciona la fecha de la cita que deseas eliminar (formato: dd-MM-yyyy).');
@@ -70,7 +67,6 @@ const flowDelete = addKeyword(['eliminar', 'borrar', 'cancelar'])
             data.eventId = eventId;
             data.phone = phone;
 
-            // Llamar a la función para eliminar la cita pasando el payload
             await deleteCalendarEvent(data);
 
             clearHistory(state);

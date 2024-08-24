@@ -5,7 +5,7 @@ import { generateTimer } from "../utils/generateTimer";
 import { getCurrentCalendar } from "../services/calendar";
 import { getFullCurrentDate } from "src/utils/currentDate";
 import { flowConfirm } from "./confirm.flow";
-import { addMinutes, isWithinInterval, format, parse, isBefore } from "date-fns";
+import { addMinutes, isWithinInterval, format, parse, isBefore, isValid } from "date-fns";
 
 const DURATION_MEET = process.env.DURATION_MEET ?? 55;
 
@@ -37,8 +37,14 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     const history = getHistoryParse(state);
     const list = await getCurrentCalendar();
 
-    const listParse = list
-        .map(({ start, end }) => ({ fromDate: new Date(start), toDate: new Date(end) }));
+    const listParse = list.map(({ start, end }) => {
+        const fromDate = new Date(start);
+        const toDate = new Date(end);
+        return {
+            fromDate: isValid(fromDate) ? fromDate : 'Invalid Date',
+            toDate: isValid(toDate) ? toDate : 'Invalid Date'
+        };
+    });
 
     console.log({ listParse });
 
@@ -51,11 +57,15 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
         }
     ]);
 
-    // Convertimos la fecha del usuario a formato ISO 8601 (yyyy-MM-ddTHH:mm:ssZ)
     const desiredDate = parse(date, 'dd-MM-yyyy HH:mm:ss', new Date());
-    const desiredDateISO = format(desiredDate, "yyyy-MM-dd'T'HH:mm:ssXXX");
 
-    // Verificar si la fecha es anterior a la fecha y hora actuales
+    if (!isValid(desiredDate)) {
+        const m = 'La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido dd-MM-yyyy HH:mm:ss.';
+        await flowDynamic(m);
+        await handleHistory({ content: m, role: 'assistant' }, state);
+        return endFlow();
+    }
+
     const now = new Date();
     if (isBefore(desiredDate, now)) {
         const m = 'No puedes crear una cita en una fecha y hora anterior a la actual. Por favor, elige otra fecha y hora.';
@@ -64,7 +74,10 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
         return endFlow();
     }
 
-    const isDateAvailable = listParse.every(({ fromDate, toDate }) => !isWithinInterval(desiredDate, { start: fromDate, end: toDate }));
+    const isDateAvailable = listParse.every(({ fromDate, toDate }) => 
+        fromDate !== 'Invalid Date' && toDate !== 'Invalid Date' && 
+        !isWithinInterval(desiredDate, { start: fromDate, end: toDate })
+    );
 
     if (!isDateAvailable) {
         const m = 'Lo siento, esa hora ya está reservada. ¿Alguna otra fecha y hora?';
@@ -77,18 +90,15 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     const formattedDateTo = format(addMinutes(desiredDate, +DURATION_MEET), 'hh:mm a');
     const message = `¡Perfecto! Tenemos disponibilidad de ${formattedDateFrom} a ${formattedDateTo} el día ${format(desiredDate, 'dd-MM-yyyy')}. ¿Confirmo tu reserva? *si*`;
     await handleHistory({ content: message, role: 'assistant' }, state);
+
+    // Convertimos desiredDate a ISO para guardar en el estado
+    const desiredDateISO = desiredDate.toISOString();
     await state.update({ desiredDate: desiredDateISO }); // Guardar la fecha en formato ISO
 
     const chunks = message.split(/(?<!\d)\.\s+/g);
     for (const chunk of chunks) {
         await flowDynamic([{ body: chunk.trim(), delay: generateTimer(150, 250) }]);
     }
-}).addAction({ capture: true }, async ({ body }, { gotoFlow, flowDynamic, state }) => {
-
-    if (body.toLowerCase().includes('si')) return gotoFlow(flowConfirm);
-
-    await flowDynamic('¿Alguna otra fecha y hora?');
-    await state.update({ desiredDate: null });
 });
 
 export { flowSchedule };

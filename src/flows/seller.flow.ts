@@ -44,23 +44,22 @@ export const generatePromptSeller = (history: string, database: string) => {
 const flowSeller = addKeyword(EVENTS.ACTION)
     .addAction(async (_, { state, flowDynamic, extensions }) => {
         try {
+            const ai = extensions.ai as AIClass;
+            const lastMessage = getHistory(state).at(-1);
+            const history = getHistoryParse(state);
 
-            const ai = extensions.ai as AIClass
-            const lastMessage = getHistory(state).at(-1)
-            const history = getHistoryParse(state)
-
-            const dataBase = await pdfQuery(lastMessage.content)
-            console.log({ dataBase })
-            const promptInfo = generatePromptSeller(history, dataBase)
+            const dataBase = await pdfQuery(lastMessage.content);
+            console.log({ dataBase });
+            const promptInfo = generatePromptSeller(history, dataBase);
 
             const response = await ai.createChat([
                 {
                     role: 'system',
                     content: promptInfo
                 }
-            ])
+            ]);
 
-            await handleHistory({ content: response, role: 'assistant' }, state)
+            await handleHistory({ content: response, role: 'assistant' }, state);
 
             const chunks = response.split(/(?<!\d)\.\s+/g);
 
@@ -68,9 +67,9 @@ const flowSeller = addKeyword(EVENTS.ACTION)
                 await flowDynamic([{ body: chunk.trim(), delay: generateTimer(150, 250) }]);
             }
         } catch (err) {
-            console.log(`[ERROR]:`, err)
-            return
+            console.log(`[ERROR]:`, err);
+            await flowDynamic('Hubo un problema al procesar la solicitud. Por favor, intenta nuevamente.');
         }
-    })
+    });
 
 export { flowSeller }
