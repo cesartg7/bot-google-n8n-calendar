@@ -31,7 +31,13 @@ const generatePromptFilter = (history: string) => {
     return mainPrompt;
 };
 
-const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions, state, flowDynamic, endFlow }) => {
+const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions, state, flowDynamic, endFlow, gotoFlow }) => {
+    // Revisión para evitar la repetición después de la confirmación
+    const isConfirmed = state.get('isConfirmed');
+    if (isConfirmed) {
+        return endFlow(); // Detenemos el flujo si ya está confirmado
+    }
+
     await flowDynamic('Dame un momento para consultar la agenda...');
     const ai = extensions.ai as AIClass;
     const history = getHistoryParse(state);
@@ -40,13 +46,6 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     const listParse = list.map(({ startISO, endISO }) => {
         const fromDate = new Date(startISO);
         const toDate = new Date(endISO);
-
-        console.log('startISO', startISO);
-        console.log('endISO', endISO);
-        console.log('fromDate', fromDate);
-        console.log('toDate', toDate);
-        console.log('isValid(fromDate) ? fromDate', isValid(fromDate) ? fromDate : 'Invalid Date');
-        console.log('isValid(toDate) ? toDate', isValid(toDate) ? toDate : 'Invalid Date');
 
         return {
             fromDate: isValid(fromDate) ? fromDate : 'Invalid Date',
@@ -67,10 +66,12 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
 
     console.log('date', date);
 
-    const desiredDate = parse(date, 'yyyy/MM/dd HH:mm:ss', new Date());
+    const desiredDate = parse(date, 'dd-MM-yyyy HH:mm', new Date());
+
+    console.log('desiredDate', desiredDate);
 
     if (!isValid(desiredDate)) {
-        const m = 'La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido yyyy/MM/dd HH:mm:ss.';
+        const m = 'La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido dd-MM-yyyy HH:mm.';
         await flowDynamic(m);
         await handleHistory({ content: m, role: 'assistant' }, state);
         return endFlow();
@@ -79,6 +80,7 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     console.log('desiredDate', desiredDate);
     
     const now = new Date();
+    console.log('now', now);
     if (isBefore(desiredDate, now)) {
         const m = 'No puedes crear una cita en una fecha y hora anterior a la actual. Por favor, elige otra fecha y hora.';
         await flowDynamic(m);
@@ -111,6 +113,15 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     for (const chunk of chunks) {
         await flowDynamic([{ body: chunk.trim(), delay: generateTimer(150, 250) }]);
     }
+
+}).addAction({ capture: true }, async ({ body }, { state, gotoFlow, flowDynamic }) => {
+    if (body.toLowerCase().includes('si')) {
+        await state.update({ isConfirmed: true }); // Marcar como confirmado en el estado
+        return gotoFlow(flowConfirm); // Ir al flujo de confirmación
+    }
+
+    await flowDynamic('¿Alguna otra fecha y hora?');
+    await state.update({ desiredDate: null });
 });
 
 export { flowSchedule };
