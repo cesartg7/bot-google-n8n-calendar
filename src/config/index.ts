@@ -2,7 +2,6 @@ export const N8N_ADD_TO_CALENDAR = process.env.N8N_ADD_TO_CALENDAR ?? ''
 export const N8N_GET_FROM_CALENDAR = process.env.N8N_GET_FROM_CALENDAR ?? ''
 export const N8N_UPDATE_TO_CALENDAR = process.env.N8N_UPDATE_TO_CALENDAR ?? ''
 export const N8N_DELETE_FROM_CALENDAR = process.env.N8N_DELETE_FROM_CALENDAR ?? ''
-// export const N8N_GET_EVENT = process.env.N8N_GET_EVENT ?? ''
 
 export const CHATPDF_API = process.env.CHATPDF_API ?? ''
 export const CHATPDF_KEY = process.env.CHATPDF_KEY ?? ''

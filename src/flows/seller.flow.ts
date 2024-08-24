@@ -42,7 +42,6 @@ export const generatePromptSeller = (history: string, database: string) => {
 };
 
 const flowSeller = addKeyword(EVENTS.ACTION)
-    .addAnswer(`⏱️`)
     .addAction(async (_, { state, flowDynamic, extensions }) => {
         try {
 
@@ -70,7 +69,7 @@ const flowSeller = addKeyword(EVENTS.ACTION)
             }
         } catch (err) {
             console.log(`[ERROR]:`, err)
-            return
+            await flowDynamic('Hubo un problema al procesar la solicitud. Por favor, intenta nuevamente.');
         }
     })
 

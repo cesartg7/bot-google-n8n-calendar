@@ -17,7 +17,6 @@ const flowConfirm = addKeyword(EVENTS.ACTION).addAction(async (_, { flowDynamic 
     if (ctx.body.toLocaleLowerCase().includes('cancelar')) {
         clearHistory(state)
         return endFlow(`¿Como puedo ayudarte?`)
-
     }
     await state.update({ name: ctx.body })
     await flowDynamic(`Ultima pregunta ¿Cual es tu email?`)
@@ -30,7 +29,7 @@ const flowConfirm = addKeyword(EVENTS.ACTION).addAction(async (_, { flowDynamic 
 
         const dateObject = {
             name: state.get('name'),
-            email: ctx.body,
+            email: ctx.body.toLocaleLowerCase(),
             startDate: utcToZonedTime(state.get('desiredDate'), TIME_ZONE),
             endData: utcToZonedTime(addMinutes(state.get('desiredDate'), +DURATION_MEET), TIME_ZONE),
             phone: ctx.from
@@ -39,7 +38,8 @@ const flowConfirm = addKeyword(EVENTS.ACTION).addAction(async (_, { flowDynamic 
         await appToCalendar(dateObject)
 
         clearHistory(state)
-        await flowDynamic('Listo! agendado Buen dia')
+        const formattedDate = format(dateObject.startDate, 'dd-MM-yyyy');
+        await flowDynamic(`Evento creado con éxito:\nFecha: ${formattedDate}\nNombre: ${dateObject.name}\nEmail: ${dateObject.email}\n\nMuchas gracias, que tengas un buen día`);
     })
 
 export { flowConfirm }

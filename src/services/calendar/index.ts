@@ -4,14 +4,16 @@ import { N8N_ADD_TO_CALENDAR, N8N_GET_FROM_CALENDAR, N8N_UPDATE_TO_CALENDAR, N8N
  * get calendar
  * @returns 
  */
-const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string }[]> => {
+const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string, name: string, email: string}[]> => {
     const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR);
-    const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string }[] = await dataCalendarApi.json();
-    const list = json.map(event => ({
+    const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string, name: string, email: string }[] = await dataCalendarApi.json();
+        const list = json.map(event => ({
         id: event.id,
         start: event.start.dateTime,
         end: event.end.dateTime,
-        description: event.description || ''  // Incluimos la descripción si está disponible
+        name: event.name || '',
+        email: event.email || '',
+        description: event.description || ''
     }));
     return list;
 }
@@ -35,33 +37,6 @@ const appToCalendar = async (payload: { name: string, email: string, startDate: 
         console.log(`error: `, err)
     }
 };
-
-// /**
-//  * Get specific calendar event
-//  * @param eventId 
-//  * @returns 
-//  */
-// const getCurrentEvent = async (eventId: string) => {
-//     try {
-//         const response = await fetch(N8N_GET_EVENT, {
-//             method: 'POST', // Cambiamos a POST para enviar el body
-//             headers: {
-//                 "Content-Type": "application/json",
-//             },
-//             body: JSON.stringify({ eventId }) 
-//         });
-
-//         if (!response.ok) {
-//             throw new Error('Failed to fetch event');
-//         }
-
-//         const event = await response.json();
-
-//         return event;
-//     } catch (err) {
-//         throw new Error('Error fetching event.');
-//     }
-// };
 
 /**
  * update calendar event
