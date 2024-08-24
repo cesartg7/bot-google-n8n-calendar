@@ -10,12 +10,26 @@ const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: s
     const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string,  name: string, email: string }[] = await dataCalendarApi.json();
     
     const list = json.map(event => {
+        console.log('event.start.dateTime', event.start.dateTime);
+        console.log('event.end.dateTime', event.end.dateTime);
         const startDate = parseISO(event.start.dateTime);
         const endDate = parseISO(event.end.dateTime);
+        console.log('startDate', startDate);
+        console.log('endDate', endDate);
 
         // Verificar si las fechas son válidas antes de formatearlas
         const formattedStartDate = isValid(startDate) ? format(startDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date';
         const formattedEndDate = isValid(endDate) ? format(endDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date';
+
+        console.log('isValid(startDate)', isValid(startDate));
+        console.log('isValid(endDate)', isValid(endDate));
+
+        console.log("format(startDate, 'dd-MM-yyyy HH:mm')", format(startDate, 'dd-MM-yyyy HH:mm'));
+        console.log("format(endDate, 'dd-MM-yyyy HH:mm')", format(endDate, 'dd-MM-yyyy HH:mm'));
+
+        console.log('formattedStartDate', formattedStartDate);
+        console.log('formattedStartDate', formattedStartDate);
+
 
         return {
             id: event.id,
@@ -26,6 +40,8 @@ const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: s
             email: event.email || '',
         };
     });
+
+    console.log('list', list);
     
     return list;
 }
