@@ -40,6 +40,14 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     const listParse = list.map(({ startISO, endISO }) => {
         const fromDate = new Date(startISO);
         const toDate = new Date(endISO);
+
+        console.log('startISO', startISO);
+        console.log('endISO', endISO);
+        console.log('fromDate', fromDate);
+        console.log('toDate', toDate);
+        console.log('isValid(fromDate) ? fromDate', isValid(fromDate) ? fromDate : 'Invalid Date');
+        console.log('isValid(toDate) ? toDate', isValid(toDate) ? toDate : 'Invalid Date');
+
         return {
             fromDate: isValid(fromDate) ? fromDate : 'Invalid Date',
             toDate: isValid(toDate) ? toDate : 'Invalid Date'
@@ -57,7 +65,11 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
         }
     ]);
 
+    console.log('date', date);
+
     const desiredDate = parse(date, 'dd-MM-yyyy HH:mm:ss', new Date());
+
+    console.log('desiredDate', desiredDate);
 
     if (!isValid(desiredDate)) {
         const m = 'La fecha proporcionada no es válida. Por favor, intenta nuevamente con un formato válido dd-MM-yyyy HH:mm:ss.';
