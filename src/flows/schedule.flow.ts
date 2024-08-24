@@ -37,9 +37,9 @@ const flowSchedule = addKeyword(EVENTS.ACTION).addAction(async (_, { extensions,
     const history = getHistoryParse(state);
     const list = await getCurrentCalendar();
 
-    const listParse = list.map(({ start, end }) => {
-        const fromDate = new Date(start);
-        const toDate = new Date(end);
+    const listParse = list.map(({ startISO, endISO }) => {
+        const fromDate = new Date(startISO);
+        const toDate = new Date(endISO);
         return {
             fromDate: isValid(fromDate) ? fromDate : 'Invalid Date',
             toDate: isValid(toDate) ? toDate : 'Invalid Date'

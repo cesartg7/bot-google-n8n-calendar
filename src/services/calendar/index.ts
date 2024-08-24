@@ -5,47 +5,28 @@ import { format, parseISO, isValid } from "date-fns";
  * get calendar
  * @returns 
  */
-const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string, name: string, email: string }[]> => {
+const getCurrentCalendar = async (): Promise<{ id: string, start: string, end: string, description: string, name: string, email: string, startISO: string, endISO: string }[]> => {
     const dataCalendarApi = await fetch(N8N_GET_FROM_CALENDAR);
-    const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string,  name: string, email: string }[] = await dataCalendarApi.json();
+    const json: { id: string, start: { dateTime: string }, end: { dateTime: string }, description: string, name: string, email: string }[] = await dataCalendarApi.json();
     
     const list = json.map(event => {
-        console.log('event.start.dateTime', event.start.dateTime);
-        console.log('event.end.dateTime', event.end.dateTime);
         const startDate = parseISO(event.start.dateTime);
         const endDate = parseISO(event.end.dateTime);
-        console.log('startDate', startDate);
-        console.log('endDate', endDate);
-
-        // Verificar si las fechas son válidas antes de formatearlas
-        const formattedStartDate = isValid(startDate) ? format(startDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date';
-        const formattedEndDate = isValid(endDate) ? format(endDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date';
-
-        console.log('isValid(startDate)', isValid(startDate));
-        console.log('isValid(endDate)', isValid(endDate));
-
-        console.log("format(startDate, 'dd-MM-yyyy HH:mm')", format(startDate, 'dd-MM-yyyy HH:mm'));
-        console.log("format(endDate, 'dd-MM-yyyy HH:mm')", format(endDate, 'dd-MM-yyyy HH:mm'));
-
-        console.log('formattedStartDate', formattedStartDate);
-        console.log('formattedStartDate', formattedStartDate);
-
 
         return {
             id: event.id,
-            start: formattedStartDate,
-            end: formattedEndDate,
+            start: isValid(startDate) ? format(startDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date',
+            end: isValid(endDate) ? format(endDate, 'dd-MM-yyyy HH:mm') : 'Invalid Date',
             description: event.description || '',
             name: event.name || '',
             email: event.email || '',
+            startISO: event.start.dateTime,  // Almacenar la fecha original en formato ISO
+            endISO: event.end.dateTime  // Almacenar la fecha original en formato ISO
         };
     });
-
-    console.log('list', list);
     
     return list;
 }
-
 
 /**
  * add to calendar

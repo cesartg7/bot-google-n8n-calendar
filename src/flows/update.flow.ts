@@ -48,7 +48,7 @@ const flowUpdate = addKeyword(['modificar', 'cambiar', 'rectificar', 'corregir']
             }
 
             const appointments = await getCurrentCalendar();
-            const appointment = appointments.find(appointment => isEqual(new Date(appointment.start), desiredDateTime));
+            const appointment = appointments.find(appointment => isEqual(new Date(appointment.startISO), desiredDateTime));
 
             if (!appointment) {
                 return flowDynamic(`No se encontró ninguna cita para el ${format(desiredDateTime, 'dd-MM-yyyy')} a las ${format(desiredDateTime, 'HH:mm')}.`);
