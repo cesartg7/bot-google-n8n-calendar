@@ -1,6 +1,6 @@
 import { addKeyword } from "@builderbot/bot";
 import { getCurrentCalendar, deleteCalendarEvent } from "../services/calendar";
-import { format, parse, isSameDay, isEqual, isValid } from "date-fns";
+import { format, parse, isSameDay, isEqual, isValid, isBefore } from "date-fns";
 import { clearHistory } from "../utils/handleHistory";
 
 /**
@@ -17,6 +17,11 @@ const flowDelete = addKeyword(['eliminar', 'borrar', 'cancelar'])
 
             if (isNaN(desiredDate.getTime()) || !isValid(desiredDate)) {
                 return fallBack('Por favor, proporciona una fecha válida en formato yyyy-MM-dd.');
+            }
+
+            const now = new Date();
+            if (isBefore(desiredDate, now)) {
+                return fallBack('No puedes eliminar citas en fechas pasadas. Por favor, proporciona una nueva fecha.');
             }
 
             await state.update({ desiredDate });
